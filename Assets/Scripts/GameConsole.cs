@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
+using DeltaDNA;
 
 
 public class GameConsole : MonoBehaviour {
 
+    // UI Controls
     public Text textConsole;
-    public Text textDdnaUserID;
-    public Text textSharedUserID;
+    public Text textDdnaUserID;   
     public Text textSessionID;
     public Text textUnityVersion;
     public Text textDdnaSDKVersion;
@@ -60,11 +60,10 @@ public class GameConsole : MonoBehaviour {
 
     public void UpdateConsole()
     {
-        //     textDdnaUserID.text = "DDNA UserID : " + DDNA.Instance.UserID;
-        //     textSharedUserID.text = "Shared UserID : " + DDNA.Instance.CrossGameUserID;
-        //     textSessionID.text = "SessionID : " + DDNA.Instance.SessionID;
-        //     textDdnaSDKVersion.text = "DDNA SDK Version : " + Settings.SDK_VERSION;
+        textDdnaUserID.text = "DDNA UserID : " + DDNA.Instance.UserID;
+        textSessionID.text = "SessionID : " + DDNA.Instance.SessionID;
+        textDdnaSDKVersion.text = "DDNA SDK Version : " + Settings.SDK_VERSION;
         textUnityVersion.text = "Unity Version : " + Application.unityVersion;
-        //     textClientVersion.text = "Client Version : " + DDNA.Instance.ClientVersion; 
+        textClientVersion.text = "Client Version : " + DDNA.Instance.ClientVersion; 
     }
 }
