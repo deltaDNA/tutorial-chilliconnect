@@ -126,8 +126,7 @@ public class Snake : MonoBehaviour {
     }
 
     public void AddBodyPart()
-    {
-        
+    {        
         Transform newpart = (Instantiate(bodyprefab, BodyParts[BodyParts.Count - 1].transform.position, BodyParts[BodyParts.Count - 1].transform.rotation) as GameObject).transform;
         if (BodyParts.Count > 1) newpart.name = "tail";        
         BodyParts.Add(newpart.gameObject); 
@@ -164,7 +163,7 @@ public class Snake : MonoBehaviour {
             
         } else if (c.name.StartsWith("tail"))
         {
-            Debug.Log("S - Ouch");
+            //Debug.Log("S - Ouch");
         }
 
 

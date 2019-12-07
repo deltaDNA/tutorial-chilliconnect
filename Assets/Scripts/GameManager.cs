@@ -22,7 +22,7 @@ public class GameManager : MonoBehaviour {
     public ChilliConnectSdk chilliConnect;
     public string chilliConnectId = null;
     private string chilliConnectSecret = null;
-
+   
 
 
     public PlayerManager player;
@@ -34,7 +34,7 @@ public class GameManager : MonoBehaviour {
     public Text txtGameOver;
     public Button bttnStart;
 
-
+    public int currentLevel = 1;
     public List<Level> levels; 
     const int DEFAULT_FOOD_SPAWN = 6;
     public int foodSpawn ;
@@ -58,6 +58,7 @@ public class GameManager : MonoBehaviour {
         // Start ChilliConnect SDK, Login, then start deltaDNA SDK
         StartSDKs();
 
+
         // These are for pulsing the start button size and alpha 
         InitialScale = transform.localScale;
         FinalScale = new Vector3(InitialScale.x + 0.04f,
@@ -66,10 +67,12 @@ public class GameManager : MonoBehaviour {
         sourceColor = new Color(1.0f, 1.0f, 1.0f, 0.5f);
         targetColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
 
+
         // Show the Start button       
         txtStart.gameObject.SetActive(true);
         bttnStart.gameObject.SetActive(true);
         readyToStart = true;
+
 
         // A simple debug console in game
         console = GameObject.FindObjectOfType<GameConsole>();
@@ -287,30 +290,57 @@ public class GameManager : MonoBehaviour {
 
     public void StartLevel(int levelNo)
     {
-        // Player starts level
-        player.SetLevel(1);
-        foodSpawn = GetFoodSpawn(player.playerLevel);
+                
+        // Called from Start button with value 1
+        // as well as from other end of previous levels.
+        currentLevel = levelNo; 
 
+        foodSpawn = GetFoodSpawn(currentLevel);
+
+        player.SetCoins(player.playerCoins - levels[currentLevel - 1].cost);
         player.UpdatePlayerStatistics();
 
         txtGameOver.gameObject.SetActive(false);
         txtStart.gameObject.SetActive(false);
         bttnStart.gameObject.SetActive(false);
-        readyToStart = false;
 
-        // Spawn new Snake 
-        Vector3 pos = new Vector3(0, 0, -1);
-        snake = Instantiate(snakePrefab, pos, Quaternion.identity).GetComponent<Snake>();
+        // Only spawn new Snake at start of game or on retry
+        if (readyToStart)
+        {
+            readyToStart = false;
+            // Spawn new Snake 
 
-        LevelStarted();
-        
+            Vector3 pos = new Vector3(0, 0, -1);
+            snake = Instantiate(snakePrefab, pos, Quaternion.identity).GetComponent<Snake>();
+        }
+
+
+        // Recorcd DDNA MissionStarted event
+        DDNA.Instance.RecordEvent(new GameEvent("missionStarted")
+            .AddParam("missionName", "Mission " + currentLevel.ToString("D3"))
+            .AddParam("missionID", currentLevel.ToString("D3"))
+            .AddParam("userLevel", player.playerLevel)
+            .AddParam("isTutorial", false)
+            .AddParam("coinBalance", player.playerCoins)
+            .AddParam("food", levels[currentLevel - 1].food))
+            .Run();
+
     }
 
 
 
     public void PlayerDied()
     {
-        LevelFailed();
+        // Record DDNA MissionFailed event
+        DDNA.Instance.RecordEvent(new GameEvent("missionFailed")
+            .AddParam("missionName", "Mission " + currentLevel.ToString("D3"))
+            .AddParam("missionID", currentLevel.ToString("D3"))
+            .AddParam("userLevel", player.playerLevel)
+            .AddParam("isTutorial", false)
+            .AddParam("coinBalance", player.playerCoins)
+            .AddParam("food", levels[player.playerLevel - 1].food)
+            .AddParam("foodRemaining", player.foodRemaining))
+            .Run();
 
         txtGameOver.gameObject.SetActive(true);
         txtStart.gameObject.SetActive(true);
@@ -323,31 +353,34 @@ public class GameManager : MonoBehaviour {
 
     public void LevelUp()
     {
-        LevelCompleted();
+        // Record DDNA MissionCompleted event
+        DDNA.Instance.RecordEvent(new GameEvent("missionCompleted")
+            .AddParam("missionName", "Mission " + currentLevel.ToString("D3"))
+            .AddParam("missionID", currentLevel.ToString("D3"))
+            .AddParam("isTutorial", false)
+            .AddParam("userLevel", player.playerLevel)
+            .AddParam("coinBalance", player.playerCoins)
+            .AddParam("food", levels[currentLevel- 1].food))
+            .Run();
 
-        player.playerLevel++;
-        
-        Debug.Log("Level Up - playerLevel " + player.playerLevel);
+        currentLevel++;
+
+        if (currentLevel > player.playerLevel)
+        {
+            player.SetLevel(currentLevel);
+            Debug.Log("Level Up - playerLevel " + player.playerLevel);
+        }
+
+
+        Debug.Log("Next Level " + currentLevel); 
 
         player.UpdatePlayerStatistics();
 
         foodSpawn = GetFoodSpawn(player.playerLevel);
-        LevelStarted();
+        StartLevel(currentLevel);
     }
 
 
-
-    public void LevelStarted()
-    {
-    }
-
-    public void LevelCompleted()
-    { 
-    }
-
-    public void LevelFailed()
-    { 
-    }
 
     
     public int GetFoodSpawn(int level)
@@ -358,9 +391,9 @@ public class GameManager : MonoBehaviour {
         {
             n = foodLevelOveride;
         }
-        else if (levels.Count > player.playerLevel && levels[player.playerLevel - 1] != null)
+        else if (levels.Count > currentLevel && levels[currentLevel - 1] != null)
         {
-            n = (int)levels[player.playerLevel - 1].food;
+            n = (int)levels[currentLevel - 1].food;
         }
 
         return n;
