@@ -109,7 +109,7 @@ MonoBehaviour:
   food: {fileID: 1920034417351384, guid: b2b870762ab9a2b4ea463ae2efe73f31, type: 3}
   tailburst: {fileID: 1529239524080954, guid: dc3c0d7f5b7936848a60aceab34d3781, type: 3}
   BodyParts:
-  - {fileID: 4581762326601296}
+  - {fileID: 1309520979796542}
   mindistance: 0.03
   beginSize: 5
   speed: 2.5

@@ -23,7 +23,7 @@ public class Snake : MonoBehaviour {
 	Vector2 vector = Vector2.up;
 	
 
-    public List<Transform> BodyParts = new List<Transform>();
+    public List<GameObject> BodyParts = new List<GameObject>();
     public float mindistance = 0.1f;
     public int beginSize; 
     public float speed = 1f;
@@ -105,12 +105,12 @@ public class Snake : MonoBehaviour {
         // Lerp Bodyparts to follow head
         for (int i=0; i<BodyParts.Count; i++)
         {
-            curBodyPart = BodyParts[i];
+            curBodyPart = BodyParts[i].transform;
             
             if (i == 0)
                 prevBodyPart = transform;
             else
-                prevBodyPart = BodyParts[i - 1];
+                prevBodyPart = BodyParts[i - 1].transform;
 
             dis = Vector3.Distance(prevBodyPart.position, curBodyPart.position);
 
@@ -127,10 +127,10 @@ public class Snake : MonoBehaviour {
 
     public void AddBodyPart()
     {
-        Transform newpart = (Instantiate(bodyprefab, BodyParts[BodyParts.Count - 1].position, BodyParts[BodyParts.Count - 1].rotation) as GameObject).transform;
-        if (BodyParts.Count > 1) newpart.name = "tail";
-        //newpart.SetParent(transform);
-        BodyParts.Add(newpart); 
+        
+        Transform newpart = (Instantiate(bodyprefab, BodyParts[BodyParts.Count - 1].transform.position, BodyParts[BodyParts.Count - 1].transform.rotation) as GameObject).transform;
+        if (BodyParts.Count > 1) newpart.name = "tail";        
+        BodyParts.Add(newpart.gameObject); 
     }
 
 
@@ -150,10 +150,10 @@ public class Snake : MonoBehaviour {
             Debug.Log("Boom");
             Renderer renderer; 
 
-            foreach(Transform t in BodyParts)
+            foreach(GameObject t in BodyParts)
             {
                 // Spawn Particles
-                GameObject p = (GameObject)Instantiate(tailburst, t.position, Quaternion.identity);
+                GameObject p = (GameObject)Instantiate(tailburst, t.transform.position, Quaternion.identity);
                                
                 // Hide bodypart 
                 renderer = t.gameObject.GetComponent<Renderer>();
@@ -176,6 +176,7 @@ public class Snake : MonoBehaviour {
             yield return new WaitForSeconds(1f);
             
             CleanUpFood();
+            CleanUpBodyParts();
             gameManager.PlayerDied();
             Destroy(gameObject);
         }
@@ -227,6 +228,13 @@ public class Snake : MonoBehaviour {
         {
             Destroy(food);
             playerManager.SetFoodRemaining(foodList.Count);
+        }
+    }
+    public void CleanUpBodyParts()
+    {
+        foreach (GameObject part in BodyParts)
+        {
+            Destroy(part);           
         }
     }
 
