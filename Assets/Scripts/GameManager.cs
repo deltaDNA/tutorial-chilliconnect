@@ -7,6 +7,14 @@ using UnityEngine.UI;
 using ChilliConnect;
 using DeltaDNA; 
 
+public class Level
+{
+    public int food { get; set; }
+    public int poison { get; set; }
+    public int cost { get; set; }
+    public int reward { get; set; }
+    public int timelimit { get; set; }
+}
 
 public class GameManager : MonoBehaviour {
 
@@ -18,16 +26,16 @@ public class GameManager : MonoBehaviour {
 
 
     public PlayerManager player;
+    
     public GameObject snakePrefab;
     private Snake snake; 
     private GameConsole console; 
     public Text txtStart;
     public Text txtGameOver;
     public Button bttnStart;
-    
 
 
-    public List<int?> foodPerLevel = new List<int?>() { 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48 };
+    public List<Level> levels; 
     const int DEFAULT_FOOD_SPAWN = 6;
     public int foodSpawn ;
     public int foodLevelOveride = 0;
@@ -44,6 +52,9 @@ public class GameManager : MonoBehaviour {
 
     private void Start()
     {
+        //PlayerPrefs.DeleteAll();
+        //Application.Quit();
+
         // Start ChilliConnect SDK, Login, then start deltaDNA SDK
         StartSDKs();
 
@@ -85,7 +96,7 @@ public class GameManager : MonoBehaviour {
         ChilliConnectInit();
 
         // Login to ChilliConnect and start deltaDNA SDK
-        LogIn(chilliConnectId, chilliConnectSecret);
+        LogIn(chilliConnectId, chilliConnectSecret);       
     }
 
 
@@ -140,6 +151,7 @@ public class GameManager : MonoBehaviour {
 
                 // Start the deltaDNA SDK using the chilliConnectIs as the deltaDNA userID
                 DeltaDNAInit(chilliConnectId);
+                GetChilliGameConfig();
             }, 
             (LogInUsingChilliConnectRequest request, LogInUsingChilliConnectError error) =>
             {
@@ -160,7 +172,7 @@ public class GameManager : MonoBehaviour {
         // Event Triggered Campaigns configuration settings
         DDNA.Instance.Settings.MultipleActionsForEventTriggerEnabled = true;
         DDNA.Instance.NotifyOnSessionConfigured(true);
-        DDNA.Instance.OnSessionConfigured += (bool cachedConfig) => GetGameConfig(cachedConfig);
+        DDNA.Instance.OnSessionConfigured += (bool cachedConfig) => GetDDNAGameConfig(cachedConfig);
 
         // Register Handlers for Event Triggered Campaign responses
         DDNA.Instance.Settings.DefaultGameParameterHandler = new GameParametersHandler(gameParameters =>
@@ -174,13 +186,61 @@ public class GameManager : MonoBehaviour {
 
 
         // Start the SDK with the chilliConnectId to ensure deltaDNA.userID and ChilliConnectId are the same.
-        DDNA.Instance.StartSDK(chilliConnectId);
+        DDNA.Instance.StartSDK(chilliConnectId);        
+    }
+
+
+
+    // Get Game Configuration from ChilliConnect
+    private void GetChilliGameConfig()
+    {
+        player.FetchCurrency(chilliConnect);
+
+        Debug.Log("Fetching metadata to configure game levels");
+        chilliConnect.Catalog.GetMetadataDefinitions(new GetMetadataDefinitionsRequestDesc(), OnMetaDataFetched, (request, error) => Debug.LogError(error.ErrorDescription));        
+    }
+
+
+
+    // Handle Game Configuration repsonse from ChilliConnect
+    private void OnMetaDataFetched(GetMetadataDefinitionsRequest request, GetMetadataDefinitionsResponse response)
+    {
+        Debug.Log("Metadata fetched: ");
+        levels = new List<Level>();
+
+        foreach(MetadataDefinition metadataItem in response.Items)
+        {
+            var levelList = metadataItem.CustomData.AsDictionary().GetList("levels");              
+            
+            foreach (var level in levelList)
+            {
+                Level l = new Level();
+
+                if (level.AsDictionary().ContainsKey("food"))
+                    l.food = level.AsDictionary().GetInt("food");
+
+                if (level.AsDictionary().ContainsKey("poison"))
+                    l.food = level.AsDictionary().GetInt("poison");
+
+                if (level.AsDictionary().ContainsKey("cost"))
+                    l.cost = level.AsDictionary().GetInt("cost");
+
+                if (level.AsDictionary().ContainsKey("reward"))
+                    l.cost = level.AsDictionary().GetInt("reward");
+
+                if (level.AsDictionary().ContainsKey("timelimit"))
+                    l.cost = level.AsDictionary().GetInt("timelimit");
+
+                levels.Add(l);
+            }
+        }
+        Debug.Log("Levels Loaded " + levels.Count);
     }
 
 
 
 
-    private void GetGameConfig(bool cachedConfig)
+    private void GetDDNAGameConfig(bool cachedConfig)
     {
         Debug.Log("Received deltaDNA configuration");
     }
@@ -298,9 +358,9 @@ public class GameManager : MonoBehaviour {
         {
             n = foodLevelOveride;
         }
-        else if (foodPerLevel.Count > player.playerLevel && foodPerLevel[player.playerLevel - 1] != null)
+        else if (levels.Count > player.playerLevel && levels[player.playerLevel - 1] != null)
         {
-            n = (int)foodPerLevel[player.playerLevel - 1];
+            n = (int)levels[player.playerLevel - 1].food;
         }
 
         return n;
