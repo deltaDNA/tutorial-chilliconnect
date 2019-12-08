@@ -208,7 +208,7 @@ public class Snake : MonoBehaviour {
     }
     public void SpawnFood()
     {
-        int n = gameManager.foodSpawn;
+        int n = gameManager.levels[gameManager.currentLevel-1].food;
 
         for (int i = 0; i < n; i++)
         {

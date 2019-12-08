@@ -246,6 +246,11 @@ public class GameManager : MonoBehaviour {
     private void GetDDNAGameConfig(bool cachedConfig)
     {
         Debug.Log("Received deltaDNA configuration");
+        
+        DDNA.Instance.RecordEvent(new GameEvent("gameConfigured")
+            .AddParam("cachedConfiguration", cachedConfig ? 1 : 0))
+            .Run();
+        
     }
 
 
@@ -254,6 +259,49 @@ public class GameManager : MonoBehaviour {
     private void MyGameParameterHandler(Dictionary<string, object> gameParameters)
     {
         Debug.Log("Received deltaDNA gameParameters from event triggered campaign" + DeltaDNA.MiniJSON.Json.Serialize(gameParameters));
+
+        foreach (string key in gameParameters.Keys)
+        {
+            // Coin Balalnce Modifier
+            if (key == "coins") 
+            {
+                int c = System.Convert.ToInt32(gameParameters[key]);               
+                RewardReceived("coins", "Event Triggered Campaign reward", c);
+            }
+
+
+            // Level configuration modifiers
+            if (key=="food" || key=="poison" || key=="missionCost" || key=="missionReward" || key=="timelimit")
+            {
+                int v= System.Convert.ToInt32(gameParameters[key]);
+                Debug.Log(string.Format("Mission {0} {1} configuration changed to {2}", currentLevel, key ,v));
+                missionModified(currentLevel, key, v);
+
+                switch(key)
+                {
+                    case "food":
+                        levels[currentLevel-1].food = v;
+                        break;
+                    case "poison":
+                        levels[currentLevel-1].poison = v;
+                        break;
+                    case "missionCost":
+                        levels[currentLevel-1].cost = v;
+                        break;
+                    case "missionReward":
+                        levels[currentLevel-1].reward = v;
+                        break;
+                    case "timelimit":
+                        levels[currentLevel-1].timelimit = v;
+                        break;
+                }
+            }
+
+
+
+
+        }
+
     }
 
 
@@ -286,16 +334,12 @@ public class GameManager : MonoBehaviour {
 
 
 
-
-
     public void StartLevel(int levelNo)
     {
                 
         // Called from Start button with value 1
         // as well as from other end of previous levels.
         currentLevel = levelNo; 
-
-        foodSpawn = GetFoodSpawn(currentLevel);
 
         player.SetCoins(player.playerCoins - levels[currentLevel - 1].cost);
         player.UpdatePlayerStatistics();
@@ -313,16 +357,19 @@ public class GameManager : MonoBehaviour {
             Vector3 pos = new Vector3(0, 0, -1);
             snake = Instantiate(snakePrefab, pos, Quaternion.identity).GetComponent<Snake>();
         }
-
-
-        // Recorcd DDNA MissionStarted event
+               
+        // Record DDNA MissionStarted event
         DDNA.Instance.RecordEvent(new GameEvent("missionStarted")
             .AddParam("missionName", "Mission " + currentLevel.ToString("D3"))
             .AddParam("missionID", currentLevel.ToString("D3"))
             .AddParam("userLevel", player.playerLevel)
             .AddParam("isTutorial", false)
             .AddParam("coinBalance", player.playerCoins)
-            .AddParam("food", levels[currentLevel - 1].food))
+            .AddParam("food", levels[currentLevel - 1].food)
+            .AddParam("poison", levels[currentLevel - 1].poison)
+            .AddParam("missionCost", levels[currentLevel - 1].cost)
+            .AddParam("missionReward", levels[currentLevel - 1].reward)
+            .AddParam("timelimit", levels[currentLevel - 1].timelimit))
             .Run();
 
     }
@@ -338,8 +385,12 @@ public class GameManager : MonoBehaviour {
             .AddParam("userLevel", player.playerLevel)
             .AddParam("isTutorial", false)
             .AddParam("coinBalance", player.playerCoins)
-            .AddParam("food", levels[player.playerLevel - 1].food)
-            .AddParam("foodRemaining", player.foodRemaining))
+            .AddParam("foodRemaining", player.foodRemaining)
+            .AddParam("food", levels[currentLevel - 1].food)
+            .AddParam("poison", levels[currentLevel - 1].poison)
+            .AddParam("missionCost", levels[currentLevel - 1].cost)
+            .AddParam("missionReward", levels[currentLevel - 1].reward)
+            .AddParam("timelimit", levels[currentLevel - 1].timelimit))
             .Run();
 
         txtGameOver.gameObject.SetActive(true);
@@ -353,14 +404,32 @@ public class GameManager : MonoBehaviour {
 
     public void LevelUp()
     {
-        // Record DDNA MissionCompleted event
-        DDNA.Instance.RecordEvent(new GameEvent("missionCompleted")
+
+
+        GameEvent m = new GameEvent("missionCompleted")
             .AddParam("missionName", "Mission " + currentLevel.ToString("D3"))
             .AddParam("missionID", currentLevel.ToString("D3"))
             .AddParam("isTutorial", false)
             .AddParam("userLevel", player.playerLevel)
             .AddParam("coinBalance", player.playerCoins)
-            .AddParam("food", levels[currentLevel- 1].food))
+            .AddParam("food", levels[currentLevel - 1].food)
+            .AddParam("poison", levels[currentLevel - 1].poison)
+            .AddParam("missionCost", levels[currentLevel - 1].cost)
+            .AddParam("missionReward", levels[currentLevel - 1].reward)
+            .AddParam("timelimit", levels[currentLevel - 1].timelimit);
+
+        if (levels[currentLevel - 1].reward > 0)
+        {
+            RewardReceived("coins", "mission " + currentLevel + "completion reward", levels[currentLevel - 1].reward);
+            m.AddParam("reward", new Params()
+                .AddParam("rewardName", string.Format("mission {0} completion reward", currentLevel))
+                .AddParam("rewardProducts", new Product()
+                    .AddVirtualCurrency("Coins", "GRIND", 20)
+                ));
+        }
+        
+        // Record DDNA MissionCompleted event
+        DDNA.Instance.RecordEvent(m)
             .Run();
 
         currentLevel++;
@@ -376,26 +445,41 @@ public class GameManager : MonoBehaviour {
 
         player.UpdatePlayerStatistics();
 
-        foodSpawn = GetFoodSpawn(player.playerLevel);
         StartLevel(currentLevel);
     }
 
 
-
-    
-    public int GetFoodSpawn(int level)
+    public void RewardReceived(string rewardType, string rewardReason, int rewardAmount)
     {
-        int n = DEFAULT_FOOD_SPAWN;
+        Debug.Log(string.Format("Player Rewarded {0} {1} for {2}",rewardAmount,rewardType,rewardReason));
 
-        if (foodLevelOveride > 0)
+        if (rewardType == "coins")
         {
-            n = foodLevelOveride;
-        }
-        else if (levels.Count > currentLevel && levels[currentLevel - 1] != null)
-        {
-            n = (int)levels[currentLevel - 1].food;
+            player.SetCoins(player.playerCoins + rewardAmount);
         }
 
-        return n;
+        DDNA.Instance.RecordEvent(new GameEvent("rewardReceived")
+            .AddParam("rewardType", rewardType)
+            .AddParam("rewardReason", rewardReason)
+            .AddParam("rewardAmount", rewardAmount)
+            .AddParam("userLevel", player.playerLevel)
+            .AddParam("coinBalance", player.playerCoins))
+            .Run();
     }
+    public void missionModified(int missionID, string modifierType, int modifierAmount)
+    {
+        DDNA.Instance.RecordEvent(new GameEvent("missionModified")
+            .AddParam("missionID", missionID.ToString("D3"))
+            .AddParam("userLevel", player.playerLevel)
+            .AddParam("coinBalance", player.playerCoins)
+            .AddParam("food", levels[missionID-1].food)
+            .AddParam("poison", levels[missionID-1].poison)
+            .AddParam("missionCost", levels[missionID-1].cost)
+            .AddParam("missionReward", levels[missionID-1].reward)
+            .AddParam("timelimit", levels[missionID-1].timelimit))
+            .Run();
+
+    }
+
+
 }
