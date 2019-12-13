@@ -16,17 +16,18 @@ public class Level
     public int timelimit { get; set; }
 }
 
+
+
 public class GameManager : MonoBehaviour {
 
 
     public ChilliConnectSdk chilliConnect;
     public string chilliConnectId = null;
     private string chilliConnectSecret = null;
-   
 
+    public Placement placement; 
 
-    public PlayerManager player;
-    
+    public PlayerManager player;    
     public GameObject snakePrefab;
     private Snake snake; 
     private GameConsole console; 
@@ -45,10 +46,10 @@ public class GameManager : MonoBehaviour {
     private Color targetColor;
     private Vector3 InitialScale;
     private Vector3 FinalScale;
-    bool readyToStart = false;
+    public bool readyToStart = false;
     bool waiting = false;
 
-
+    
 
     private void Start()
     {
@@ -77,6 +78,7 @@ public class GameManager : MonoBehaviour {
         // A simple debug console in game
         console = GameObject.FindObjectOfType<GameConsole>();
         console.UpdateConsole();
+        
     }
 
 
@@ -165,6 +167,62 @@ public class GameManager : MonoBehaviour {
         );
     }
 
+
+    private void RemoteCampaign(string decisionPoint, string parameters)
+    {
+
+        var scriptParams = new Dictionary<string, SdkCore.MultiTypeValue>();       
+        scriptParams.Add("decisionPoint", decisionPoint);
+        scriptParams.Add("version", "4");
+        scriptParams.Add("locale", "en_GB");
+        scriptParams.Add("platform", DDNA.Instance.Platform);
+        scriptParams.Add("engageURL", DDNA.Instance.EngageURL);
+        scriptParams.Add("environmentKey", DDNA.Instance.EnvironmentKey);
+        if (! string.IsNullOrEmpty(parameters)) scriptParams.Add("parameters", parameters);
+
+
+        var runScriptRequest = new RunScriptRequestDesc("ENGAGE_DECISION_POINT_CAMPAIGN");
+        runScriptRequest.Params = scriptParams;
+
+
+        Debug.Log("Running Engage Campaign Script for decisionPoint : " + decisionPoint);
+        chilliConnect.CloudCode.RunScript(runScriptRequest
+            , (request, response) => {
+               
+                var engageResponse = response.Output.AsDictionary();
+
+                if (engageResponse.ContainsKey("parameters"))
+                {
+                    var p = engageResponse["parameters"].AsDictionary();
+                    foreach (var i in p)
+                    {                        
+                        //Debug.Log("Response Parameter : " + i.Key + " Value : " + i.Value);
+
+                        if (i.Key == "placementType") 
+                            placement.type = i.Value.AsString();
+
+                        if (i.Key == "placementPosition")
+                            placement.position = i.Value.AsString();
+
+                        if (i.Key == "placementFrequency")
+                            placement.frequency = i.Value.AsInt();
+
+                        if (i.Key == "placementSessionCap")
+                            placement.limit = i.Value.AsInt();
+
+                        if (i.Key == "placementType")
+                            placement.type = i.Value.AsString();
+
+                        if (i.Key == "placementPromoID")
+                            placement.promoID = i.Value.AsInt();
+                    }                    
+                }
+           }
+            , (request, error) => Debug.LogError(error.ErrorDescription));
+    }
+
+
+
    // Setup a few things and start the deltaDNA SDK
     private void DeltaDNAInit(string chilliConnectId)
     {
@@ -250,7 +308,8 @@ public class GameManager : MonoBehaviour {
         DDNA.Instance.RecordEvent(new GameEvent("gameConfigured")
             .AddParam("cachedConfiguration", cachedConfig ? 1 : 0))
             .Run();
-        
+
+        RemoteCampaign("placement",null);
     }
 
 
@@ -445,6 +504,7 @@ public class GameManager : MonoBehaviour {
 
         player.UpdatePlayerStatistics();
 
+        placement.Show();
         StartLevel(currentLevel);
     }
 

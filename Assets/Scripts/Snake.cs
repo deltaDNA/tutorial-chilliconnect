@@ -177,6 +177,7 @@ public class Snake : MonoBehaviour {
             CleanUpFood();
             CleanUpBodyParts();
             gameManager.PlayerDied();
+            gameManager.placement.Show();
             Destroy(gameObject);
         }
     }
