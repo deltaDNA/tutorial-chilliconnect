@@ -14,6 +14,9 @@ public class PlayerManager : MonoBehaviour {
     public int foodRemaining = 0; 
     public HudManager hud;
 
+    public enum State { DEAD, ALIVE };
+    public State state = State.DEAD; 
+
     private ChilliConnectSdk chilliConnect; 
 
 	// Use this for initialization
@@ -47,6 +50,7 @@ public class PlayerManager : MonoBehaviour {
                             break;
                     }
                 }
+                UpdatePlayerStatistics();
             }
             , (request, error) => Debug.LogError(error.ErrorDescription));
     }
@@ -61,30 +65,42 @@ public class PlayerManager : MonoBehaviour {
         );
 
         playerLevel = l;
-        hud.SetLevel(playerLevel);
+        UpdatePlayerStatistics();
     }
 
     public void SetHealth(int h)
     {
         // TODO Save to cloud
         playerHealth = h;
-        hud.SetHealth(playerHealth);
+        UpdatePlayerStatistics();
+
     }
 
-    public void SetCoins(int c)
+    public void SpendCoins(int c)
+    {
+        SetCoins(playerCoins - c); 
+    }
+
+    public void receiveCoins(int c)
+    {
+        SetCoins(playerCoins + c);
+    }
+
+    private void SetCoins(int c)
     {
         chilliConnect.Economy.SetCurrencyBalance(new SetCurrencyBalanceRequestDesc("COINS", c)
             , (request, response) => Debug.Log("Set UserCoins " + c)
             , (request, error) => Debug.LogError(error.ErrorDescription)
         );
         playerCoins = c;
-        hud.SetCoins(playerCoins);
+        UpdatePlayerStatistics();
+
     }
 
     public void SetFoodRemaining(int f)
     {
         foodRemaining = f;
-        hud.SetFoodRemaining(foodRemaining);
+        UpdatePlayerStatistics();
     }
 
     public void UpdatePlayerStatistics()
@@ -94,4 +110,13 @@ public class PlayerManager : MonoBehaviour {
         hud.SetLevel(playerLevel);
         hud.SetFoodRemaining(foodRemaining);
     } 
+
+    public void Kill()
+    {
+        this.state = State.DEAD;
+    }
+    public void NewPlayer()
+    {
+        this.state = State.ALIVE;
+    }
 }

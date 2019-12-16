@@ -53,8 +53,11 @@ public class Snake : MonoBehaviour {
     }
 	
 	// Update is called once per frame
-	void Update () {        
-        Move();     
+	void Update () {
+        if (!gameManager.gameplayPaused)
+        {
+            Move();
+        }
     }
 
     public void Move()
@@ -177,7 +180,7 @@ public class Snake : MonoBehaviour {
             CleanUpFood();
             CleanUpBodyParts();
             gameManager.PlayerDied();
-            gameManager.placement.Show();
+            
             Destroy(gameObject);
         }
     }

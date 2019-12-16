@@ -25,20 +25,24 @@ public class GameManager : MonoBehaviour {
     public string chilliConnectId = null;
     private string chilliConnectSecret = null;
 
-    public Placement placement; 
 
-    public PlayerManager player;    
+
+    public PlayerManager player;
+    public PlacementManager placementManager;
     public GameObject snakePrefab;
-    private Snake snake; 
-    private GameConsole console; 
+    private Snake snake;
+    public MissionSummary missionSummary;
+    
+    public GameConsole console;
     public Text txtStart;
     public Text txtGameOver;
+    public Text txtCost;
     public Button bttnStart;
 
     public int currentLevel = 1;
-    public List<Level> levels; 
+    public List<Level> levels;
     const int DEFAULT_FOOD_SPAWN = 6;
-    public int foodSpawn ;
+    public int foodSpawn;
     public int foodLevelOveride = 0;
 
     // Start Button Size and Color
@@ -47,14 +51,20 @@ public class GameManager : MonoBehaviour {
     private Vector3 InitialScale;
     private Vector3 FinalScale;
     public bool readyToStart = false;
+    public bool gameplayPaused = true;
+
     bool waiting = false;
 
-    
+
 
     private void Start()
     {
         //PlayerPrefs.DeleteAll();
         //Application.Quit();
+
+
+        // A simple debug console in game
+        console.UpdateConsole();
 
         // Start ChilliConnect SDK, Login, then start deltaDNA SDK
         StartSDKs();
@@ -69,16 +79,10 @@ public class GameManager : MonoBehaviour {
         targetColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
 
 
-        // Show the Start button       
-        txtStart.gameObject.SetActive(true);
-        bttnStart.gameObject.SetActive(true);
-        readyToStart = true;
 
 
-        // A simple debug console in game
-        console = GameObject.FindObjectOfType<GameConsole>();
-        console.UpdateConsole();
-        
+
+
     }
 
 
@@ -101,7 +105,7 @@ public class GameManager : MonoBehaviour {
         ChilliConnectInit();
 
         // Login to ChilliConnect and start deltaDNA SDK
-        LogIn(chilliConnectId, chilliConnectSecret);       
+        LogIn(chilliConnectId, chilliConnectSecret);
     }
 
 
@@ -111,7 +115,7 @@ public class GameManager : MonoBehaviour {
     private void ChilliConnectInit()
     {
         // InitialiseChilliConnect SDK with our Game Token
-        chilliConnect = new ChilliConnectSdk("6PvaW0XKPZF3wUTOavDPwcLQUho9DQdS",true);
+        chilliConnect = new ChilliConnectSdk("6PvaW0XKPZF3wUTOavDPwcLQUho9DQdS", true);
 
         // Create a Player and store the ChilliConnectId if we don't already have one
         if (!PlayerPrefs.HasKey("ChilliConnectId") || !PlayerPrefs.HasKey("ChilliConnectSecret"))
@@ -128,7 +132,7 @@ public class GameManager : MonoBehaviour {
                     PlayerPrefs.SetString("ChilliConnectSecret", response.ChilliConnectSecret);
 
                     chilliConnectId = response.ChilliConnectId;
-                    chilliConnectSecret = response.ChilliConnectSecret;                    
+                    chilliConnectSecret = response.ChilliConnectSecret;
                 },
                 (CreatePlayerRequest request, CreatePlayerError error) =>
                 {
@@ -139,7 +143,7 @@ public class GameManager : MonoBehaviour {
         else
         {
             chilliConnectId = PlayerPrefs.GetString("ChilliConnectId");
-            chilliConnectSecret = PlayerPrefs.GetString("ChilliConnectSecret");            
+            chilliConnectSecret = PlayerPrefs.GetString("ChilliConnectSecret");
         }
 
     }
@@ -157,7 +161,7 @@ public class GameManager : MonoBehaviour {
                 // Start the deltaDNA SDK using the chilliConnectIs as the deltaDNA userID
                 DeltaDNAInit(chilliConnectId);
                 GetChilliGameConfig();
-            }, 
+            },
             (LogInUsingChilliConnectRequest request, LogInUsingChilliConnectError error) =>
             {
                 Debug.Log("An error occurred during ChilliConnect Player Login : " + error.ErrorDescription + "\n Data : " + error.ErrorData);
@@ -171,14 +175,14 @@ public class GameManager : MonoBehaviour {
     private void RemoteCampaign(string decisionPoint, string parameters)
     {
 
-        var scriptParams = new Dictionary<string, SdkCore.MultiTypeValue>();       
+        var scriptParams = new Dictionary<string, SdkCore.MultiTypeValue>();
         scriptParams.Add("decisionPoint", decisionPoint);
         scriptParams.Add("version", "4");
         scriptParams.Add("locale", "en_GB");
         scriptParams.Add("platform", DDNA.Instance.Platform);
         scriptParams.Add("engageURL", DDNA.Instance.EngageURL);
         scriptParams.Add("environmentKey", DDNA.Instance.EnvironmentKey);
-        if (! string.IsNullOrEmpty(parameters)) scriptParams.Add("parameters", parameters);
+        if (!string.IsNullOrEmpty(parameters)) scriptParams.Add("parameters", parameters);
 
 
         var runScriptRequest = new RunScriptRequestDesc("ENGAGE_DECISION_POINT_CAMPAIGN");
@@ -188,42 +192,42 @@ public class GameManager : MonoBehaviour {
         Debug.Log("Running Engage Campaign Script for decisionPoint : " + decisionPoint);
         chilliConnect.CloudCode.RunScript(runScriptRequest
             , (request, response) => {
-               
+
                 var engageResponse = response.Output.AsDictionary();
 
                 if (engageResponse.ContainsKey("parameters"))
                 {
                     var p = engageResponse["parameters"].AsDictionary();
                     foreach (var i in p)
-                    {                        
+                    {
                         //Debug.Log("Response Parameter : " + i.Key + " Value : " + i.Value);
 
-                        if (i.Key == "placementType") 
-                            placement.type = i.Value.AsString();
+                        if (i.Key == "placementType")
+                            placementManager.type = i.Value.AsString();
 
                         if (i.Key == "placementPosition")
-                            placement.position = i.Value.AsString();
+                            placementManager.position = i.Value.AsString();
 
                         if (i.Key == "placementFrequency")
-                            placement.frequency = i.Value.AsInt();
+                            placementManager.frequency = i.Value.AsInt();
 
                         if (i.Key == "placementSessionCap")
-                            placement.limit = i.Value.AsInt();
+                            placementManager.limit = i.Value.AsInt();
 
                         if (i.Key == "placementType")
-                            placement.type = i.Value.AsString();
+                            placementManager.type = i.Value.AsString();
 
                         if (i.Key == "placementPromoID")
-                            placement.promoID = i.Value.AsInt();
-                    }                    
+                            placementManager.promoID = i.Value.AsInt();
+                    }
                 }
-           }
+            }
             , (request, error) => Debug.LogError(error.ErrorDescription));
     }
 
 
 
-   // Setup a few things and start the deltaDNA SDK
+    // Setup a few things and start the deltaDNA SDK
     private void DeltaDNAInit(string chilliConnectId)
     {
         // Configure some things
@@ -247,7 +251,7 @@ public class GameManager : MonoBehaviour {
 
 
         // Start the SDK with the chilliConnectId to ensure deltaDNA.userID and ChilliConnectId are the same.
-        DDNA.Instance.StartSDK(chilliConnectId);        
+        DDNA.Instance.StartSDK(chilliConnectId);
     }
 
 
@@ -258,7 +262,7 @@ public class GameManager : MonoBehaviour {
         player.FetchCurrency(chilliConnect);
 
         Debug.Log("Fetching metadata to configure game levels");
-        chilliConnect.Catalog.GetMetadataDefinitions(new GetMetadataDefinitionsRequestDesc(), OnMetaDataFetched, (request, error) => Debug.LogError(error.ErrorDescription));        
+        chilliConnect.Catalog.GetMetadataDefinitions(new GetMetadataDefinitionsRequestDesc(), OnMetaDataFetched, (request, error) => Debug.LogError(error.ErrorDescription));
     }
 
 
@@ -269,10 +273,10 @@ public class GameManager : MonoBehaviour {
         Debug.Log("Metadata fetched: ");
         levels = new List<Level>();
 
-        foreach(MetadataDefinition metadataItem in response.Items)
+        foreach (MetadataDefinition metadataItem in response.Items)
         {
-            var levelList = metadataItem.CustomData.AsDictionary().GetList("levels");              
-            
+            var levelList = metadataItem.CustomData.AsDictionary().GetList("levels");
+
             foreach (var level in levelList)
             {
                 Level l = new Level();
@@ -296,6 +300,16 @@ public class GameManager : MonoBehaviour {
             }
         }
         Debug.Log("Levels Loaded " + levels.Count);
+
+        // Show the Start button       
+        txtStart.gameObject.SetActive(true);
+        txtGameOver.gameObject.SetActive(false);
+        txtCost.gameObject.SetActive(true);
+        txtCost.text = string.Format("Cost {0} Coins", levels[currentLevel].cost);
+        bttnStart.gameObject.SetActive(true);
+
+        // Start pulsing the start button
+        readyToStart = true;
     }
 
 
@@ -304,12 +318,14 @@ public class GameManager : MonoBehaviour {
     private void GetDDNAGameConfig(bool cachedConfig)
     {
         Debug.Log("Received deltaDNA configuration");
-        
+
         DDNA.Instance.RecordEvent(new GameEvent("gameConfigured")
             .AddParam("cachedConfiguration", cachedConfig ? 1 : 0))
             .Run();
 
-        RemoteCampaign("placement",null);
+        RemoteCampaign("placement", null);
+
+
     }
 
 
@@ -322,36 +338,36 @@ public class GameManager : MonoBehaviour {
         foreach (string key in gameParameters.Keys)
         {
             // Coin Balalnce Modifier
-            if (key == "coins") 
+            if (key == "coins")
             {
-                int c = System.Convert.ToInt32(gameParameters[key]);               
+                int c = System.Convert.ToInt32(gameParameters[key]);
                 RewardReceived("coins", "Event Triggered Campaign reward", c);
             }
 
 
             // Level configuration modifiers
-            if (key=="food" || key=="poison" || key=="missionCost" || key=="missionReward" || key=="timelimit")
+            if (key == "food" || key == "poison" || key == "missionCost" || key == "missionReward" || key == "timelimit")
             {
-                int v= System.Convert.ToInt32(gameParameters[key]);
-                Debug.Log(string.Format("Mission {0} {1} configuration changed to {2}", currentLevel, key ,v));
+                int v = System.Convert.ToInt32(gameParameters[key]);
+                Debug.Log(string.Format("Mission {0} {1} configuration changed to {2}", currentLevel, key, v));
                 missionModified(currentLevel, key, v);
 
-                switch(key)
+                switch (key)
                 {
                     case "food":
-                        levels[currentLevel-1].food = v;
+                        levels[currentLevel - 1].food = v;
                         break;
                     case "poison":
-                        levels[currentLevel-1].poison = v;
+                        levels[currentLevel - 1].poison = v;
                         break;
                     case "missionCost":
-                        levels[currentLevel-1].cost = v;
+                        levels[currentLevel - 1].cost = v;
                         break;
                     case "missionReward":
-                        levels[currentLevel-1].reward = v;
+                        levels[currentLevel - 1].reward = v;
                         break;
                     case "timelimit":
-                        levels[currentLevel-1].timelimit = v;
+                        levels[currentLevel - 1].timelimit = v;
                         break;
                 }
             }
@@ -381,7 +397,7 @@ public class GameManager : MonoBehaviour {
             Debug.Log("Image Message actioned by " + obj.ID + " with command " + obj.ActionValue);
 
             // Process any parameters received with the Image Message
-            if(imageMessage.Parameters != null)
+            if (imageMessage.Parameters != null)
             {
                 MyGameParameterHandler(imageMessage.Parameters);
             }
@@ -391,20 +407,37 @@ public class GameManager : MonoBehaviour {
         imageMessage.Show();
     }
 
+    // Called from Start Button
+    public void NewGame()
+    {
+        // Check the player can afford to play
+        if (player.playerCoins >= levels[currentLevel - 1].cost)
+        {                      
+            player.NewPlayer();
+            StartLevel(1);
+        }
+        else
+        {
+            placementManager.Show();
+        }
+    }
 
 
     public void StartLevel(int levelNo)
     {
-                
-        // Called from Start button with value 1
-        // as well as from other end of previous levels.
-        currentLevel = levelNo; 
-
-        player.SetCoins(player.playerCoins - levels[currentLevel - 1].cost);
+        // Deduct Level cost from balance
+        player.SpendCoins(levels[currentLevel - 1].cost);
         player.UpdatePlayerStatistics();
+
+
+        // as well as from other end of previous levels.
+        currentLevel = levelNo;
+        player.state = PlayerManager.State.ALIVE;    
+
 
         txtGameOver.gameObject.SetActive(false);
         txtStart.gameObject.SetActive(false);
+        txtCost.gameObject.SetActive(false);
         bttnStart.gameObject.SetActive(false);
 
         // Only spawn new Snake at start of game or on retry
@@ -414,9 +447,10 @@ public class GameManager : MonoBehaviour {
             // Spawn new Snake 
 
             Vector3 pos = new Vector3(0, 0, -1);
-            snake = Instantiate(snakePrefab, pos, Quaternion.identity).GetComponent<Snake>();
+            snake = Instantiate(snakePrefab, pos, Quaternion.identity).GetComponent<Snake>();            
         }
-               
+
+        gameplayPaused = false;
         // Record DDNA MissionStarted event
         DDNA.Instance.RecordEvent(new GameEvent("missionStarted")
             .AddParam("missionName", "Mission " + currentLevel.ToString("D3"))
@@ -437,6 +471,9 @@ public class GameManager : MonoBehaviour {
 
     public void PlayerDied()
     {
+        player.Kill();
+        missionSummary.Show(PlayerManager.State.DEAD);
+
         // Record DDNA MissionFailed event
         DDNA.Instance.RecordEvent(new GameEvent("missionFailed")
             .AddParam("missionName", "Mission " + currentLevel.ToString("D3"))
@@ -454,12 +491,20 @@ public class GameManager : MonoBehaviour {
 
         txtGameOver.gameObject.SetActive(true);
         txtStart.gameObject.SetActive(true);
+        txtCost.gameObject.SetActive(true);
         bttnStart.gameObject.SetActive(true);
-        readyToStart = true; 
+        readyToStart = true;
+        Pause();
+
+        
 
     }
 
 
+    public void Pause()
+    {
+        gameplayPaused = true;
+    }
 
     public void LevelUp()
     {
@@ -504,8 +549,9 @@ public class GameManager : MonoBehaviour {
 
         player.UpdatePlayerStatistics();
 
-        placement.Show();
-        StartLevel(currentLevel);
+        missionSummary.Show(player.state);
+        Pause();
+        
     }
 
 
@@ -515,7 +561,7 @@ public class GameManager : MonoBehaviour {
 
         if (rewardType == "coins")
         {
-            player.SetCoins(player.playerCoins + rewardAmount);
+            player.receiveCoins(rewardAmount);
         }
 
         DDNA.Instance.RecordEvent(new GameEvent("rewardReceived")
