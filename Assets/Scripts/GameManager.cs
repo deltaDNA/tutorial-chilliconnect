@@ -20,7 +20,6 @@ public class Level
 
 public class GameManager : MonoBehaviour {
 
-
     public ChilliConnectSdk chilliConnect;
     public string chilliConnectId = null;
     private string chilliConnectSecret = null;
@@ -177,17 +176,12 @@ public class GameManager : MonoBehaviour {
 
         var scriptParams = new Dictionary<string, SdkCore.MultiTypeValue>();
         scriptParams.Add("decisionPoint", decisionPoint);
-        scriptParams.Add("version", "4");
         scriptParams.Add("locale", "en_GB");
         scriptParams.Add("platform", DDNA.Instance.Platform);
-        scriptParams.Add("engageURL", DDNA.Instance.EngageURL);
-        scriptParams.Add("environmentKey", DDNA.Instance.EnvironmentKey);
         if (!string.IsNullOrEmpty(parameters)) scriptParams.Add("parameters", parameters);
-
 
         var runScriptRequest = new RunScriptRequestDesc("ENGAGE_DECISION_POINT_CAMPAIGN");
         runScriptRequest.Params = scriptParams;
-
 
         Debug.Log("Running Engage Campaign Script for decisionPoint : " + decisionPoint);
         chilliConnect.CloudCode.RunScript(runScriptRequest
