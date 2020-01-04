@@ -366,12 +366,7 @@ public class GameManager : MonoBehaviour {
                         break;
                 }
             }
-
-
-
-
         }
-
     }
 
 
@@ -579,7 +574,6 @@ public class GameManager : MonoBehaviour {
             .AddParam("missionReward", levels[missionID-1].reward)
             .AddParam("timelimit", levels[missionID-1].timelimit))
             .Run();
-
     }
 
 
