@@ -81,7 +81,7 @@ public class PlayerManager : MonoBehaviour {
         SetCoins(playerCoins - c); 
     }
 
-    public void receiveCoins(int c)
+    public void AddCoins(int c)
     {
         SetCoins(playerCoins + c);
     }

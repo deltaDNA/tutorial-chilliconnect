@@ -41,7 +41,7 @@ public class PlacementManager : MonoBehaviour
     }
     public void FreeCoins()
     {
-        gameManager.player.receiveCoins(50);
+        gameManager.player.AddCoins(50);
         Hide();
     }
 }

@@ -114,7 +114,8 @@ public class GameManager : MonoBehaviour {
     private void ChilliConnectInit()
     {
         // InitialiseChilliConnect SDK with our Game Token
-        chilliConnect = new ChilliConnectSdk("6PvaW0XKPZF3wUTOavDPwcLQUho9DQdS", true);
+        //chilliConnect = new ChilliConnectSdk("6PvaW0XKPZF3wUTOavDPwcLQUho9DQdS", true); 
+        chilliConnect = new ChilliConnectSdk("hxNSsyHz0KYmgNweytP4AiJGiuJIfl8t", true);
 
         // Create a Player and store the ChilliConnectId if we don't already have one
         if (!PlayerPrefs.HasKey("ChilliConnectId") || !PlayerPrefs.HasKey("ChilliConnectSecret"))
@@ -279,16 +280,16 @@ public class GameManager : MonoBehaviour {
                     l.food = level.AsDictionary().GetInt("food");
 
                 if (level.AsDictionary().ContainsKey("poison"))
-                    l.food = level.AsDictionary().GetInt("poison");
+                    l.poison = level.AsDictionary().GetInt("poison");
 
                 if (level.AsDictionary().ContainsKey("cost"))
                     l.cost = level.AsDictionary().GetInt("cost");
 
                 if (level.AsDictionary().ContainsKey("reward"))
-                    l.cost = level.AsDictionary().GetInt("reward");
+                    l.reward = level.AsDictionary().GetInt("reward");
 
                 if (level.AsDictionary().ContainsKey("timelimit"))
-                    l.cost = level.AsDictionary().GetInt("timelimit");
+                    l.timelimit = level.AsDictionary().GetInt("timelimit");
 
                 levels.Add(l);
             }
@@ -555,7 +556,7 @@ public class GameManager : MonoBehaviour {
 
         if (rewardType == "coins")
         {
-            player.receiveCoins(rewardAmount);
+            player.AddCoins(rewardAmount);
         }
 
         DDNA.Instance.RecordEvent(new GameEvent("rewardReceived")
