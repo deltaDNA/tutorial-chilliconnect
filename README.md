@@ -17,7 +17,6 @@ This tutorial contains examples of the following common scenarios.
 Supporting project files
 * Project source code on [GitHub](https://github.com/deltaDNA/tutorial-chilliconnect)
 * [deltaDNA](https://www.deltadna.net/demo-account/tutorial-chilliconnect/dev) event schema, reporting, segementation and campaigns. *Please email support@deltaDNA.com if you require access to this game account*
-* [Playable Demo](https://connect.unity.com/p/deltadna-chilliconnect-tutorial) on Unity Community Hub
 
 
 
@@ -436,11 +435,11 @@ try {
 ````
 
 # Out Of Game CRM
-deltaDNA Out Of Game campaigns are used for sending Push Notifications, Emails and Webhook requests to the player. But they are also ideal for remotely gifting currency or inventory items to a player. 
+deltaDNA Out Of Game campaigns are used for sending Push Notifications, Emails and Webhook requests to the player outside of a gameplay session. But they are also ideal for remotely gifting currency or inventory items to a player. 
 
 Out Of Game campaigns support powerful player segmentation, timing and localisation capabilities and can be used to automate CRM campaigns. 
 
-In this example we will remotely gift 25 coins to new players at 6pm in their local time-zone and send them a push notification informing them of the gift and encouraging them back to the game.
+In this example we will remotely gift 25 coins to new players at 6pm in their local time-zone and send them a push notification informing them of the gift and encouraging them back to the game. To Be Continued...
 
 
 
