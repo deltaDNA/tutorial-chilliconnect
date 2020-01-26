@@ -1,10 +1,10 @@
 # ChilliConnect Tutorial
- 
+
 deltaDNA and ChilliConnect work well together to provide a rich set of Analytics, Live-Ops and CRM capabilities.
 
 There are multiple communication paths between deltaDNA, ChilliConnect, the game client and respective cloud services to facilitate a wide range of use cases.
 
-This tutorial contains examples of the following common scenarios. 
+This tutorial contains examples of the following common scenarios.
 
 * [Common Player Identity](#common-player-identity)
 * [Client Based Event Collection](#client-based-event-collection)
@@ -22,19 +22,19 @@ Supporting project files
 
 
 # Common Player Identity
-It makes life a lot easier if deltaDNA and ChilliConnect use the same identity to refer to a player. 
+It makes life a lot easier if deltaDNA and ChilliConnect use the same identity to refer to a player.
 
 The deltaDNA SDK can use any identity you provide, so it makes sense to use the ChilliConnectId to refer to the player. The ChilliConnectId is provided in the response from the ChilliConnect CreatePlayer method. Store it locally in the game client then use it on all subsequent occasions to Start the deltaDNA SDK. It will then be used for all deltaDNA analysis, segmentation and personalisation as well as appearing in the ChilliConnect UI for player inventory and currecny management etc..
 
-```csharp 
+```csharp
 	DDNA.Instance.StartSDK(chilliConnectId);
-``` 
+```
 
 
 # Client based event collection
 Most of the gameplay events that you generate will originate from the game client, as the player does things in the game that you want to record. Examples of client side events would include the player levelling up, completing a mission etc..
 
-These events are recorded on the game client, cached locally and uploaded to deltaDNA automatically by the SDK at regular 1 minute intervals. 
+These events are recorded on the game client, cached locally and uploaded to deltaDNA automatically by the SDK at regular 1 minute intervals.
 
 This example records a **missionStarted** event to reveal the details of a mission the player has just started.
 ```csharp
@@ -58,12 +58,12 @@ This example records a **missionStarted** event to reveal the details of a missi
 # Cloud Based Event Collection
 There are occasions when you may want to submit an event to deltaDNA from ChilliConnect Cloud code. This will happen if there is something that server knows about the player that the client doesn't know or cannot be trusted with. In this scenatio, the [deltaDNA REST API](https://docs.deltadna.com/advanced-integration/rest-api/) can be used to send events to deltaDNA from the ChilliConnect Cloud.
 
-In this example a **chilliConnectLogin** event is sent to deltaDNA from ChilliConnect Cloud Code when the player logs in to ChilliConnect. This is achieved by creating a ChilliConnect Cloud Code **Event Script** and setting it to trigger when the ChilliConnect **logInUsingChilliConnect v2.0** API method is called. 
+In this example a **chilliConnectLogin** event is sent to deltaDNA from ChilliConnect Cloud Code when the player logs in to ChilliConnect. This is achieved by creating a ChilliConnect Cloud Code **Event Script** and setting it to trigger when the ChilliConnect **logInUsingChilliConnect v2.0** API method is called.
 
 ![loginEvent](Images/ChilliConnectEventScript.jpg)
 
-The [login event script](ChilliConnectCloudScripts/collect_login_event.js): 
-* Retrieves the deltaDNA URL and Environment details from a [common cloud code module](ChilliConnectCloudScripts/deltadna_endpoints.js) 
+The [login event script](ChilliConnectCloudScripts/collect_login_event.js):
+* Retrieves the deltaDNA URL and Environment details from a [common cloud code module](ChilliConnectCloudScripts/deltadna_endpoints.js)
 * Constructs a JSON event and parameters
 * Posts the event to deltaDNA
 * Handles the response and logs any errors.
@@ -82,34 +82,34 @@ var userLevel = sdk.Economy.getCurrencyBalance(["USERLEVEL"]).Balances[0].Balanc
 
 try {
     var ddnaCollectUrl = ddna.getCollectUrl();
-    
+
     if (ddnaCollectUrl !== null) {
         var parameters = {
             coinBalance : coinsBalance,
             userLevel : userLevel
         };
-        
+
         var body = {
             eventName: "chilliConnectLogin",
             userID: player.ChilliConnectID,
             eventParams : parameters
         };
-        
+
         var request = ChilliConnect.Http.Request.setJson(body);
         var response = request.post(ddnaCollectUrl);    
-        
+
         if(response) {
 	 .
 	 .
-	 .	
+	 .
 ```
 For convenience, the deltaDNA URL and environment keys for this game are loaded from a **module** created in ChilliConnect Cloud Code
 
-The [Endpoints module](ChilliConnectCloudScripts/deltadna_endpoints.js): 
+The [Endpoints module](ChilliConnectCloudScripts/deltadna_endpoints.js):
 * defines the deltaDNA Collect & Engage URL endpoints
 * defines the deltaDNA Environment Keys
 * defines the current Environment to use (DEV or LIVE)
-* Provides a helper function to get the complete URL to POST Collect events or Engage campaign requests to. 
+* Provides a helper function to get the complete URL to POST Collect events or Engage campaign requests to.
 
 *The endpoint and environment key values for your game can found on your game details page in deltaDNA*
 
@@ -125,9 +125,9 @@ const mode = "DEV";
 .
 .
 // Exports
-module.exports.collectUrl = collect; 
-module.exports.engageUrl = engage; 
-module.exports.devEnvironmentKey = devKey; 
+module.exports.collectUrl = collect;
+module.exports.engageUrl = engage;
+module.exports.devEnvironmentKey = devKey;
 module.exports.liveEnvironmentKey = liveKey;
 module.exports.mode = mode;
 
@@ -215,16 +215,16 @@ The same approach is used to configure the game's levels. They are loaded as a J
 
 
 # Client Based CRM
-There will be occasions when you want to change an aspect of the game configuration for a subset of players, without necessarily wanting to impact all players. 
+There will be occasions when you want to change an aspect of the game configuration for a subset of players, without necessarily wanting to impact all players.
 
 Perhaps you want to change the difficulty of a particular level for new players, present a special offer to verteran players or promote a limited time event.
 
-You may even want to A/B test different content and configurations to determine the optimal settings for different player segments. 
+You may even want to A/B test different content and configurations to determine the optimal settings for different player segments.
 
 In this example our analysis has identified that the 3rd level is too difficult for new players, so we have setup a deltaDNA Event triggered campaign to target players if they fail mission 3, on subsequent attemts it:
 * reduces the cost of the level to the player
-* reduces the number of items of food the player has to eat 
-* increases the level reward. 
+* reduces the number of items of food the player has to eat
+* increases the level reward.
 
 The campaign sends the following **Game Parameter Action** to the player.
 ![GameParameterAction](Images/Mission3Action.jpg)
@@ -340,7 +340,7 @@ There may be occasions when you want to modify the game or personalize the playe
 
 A typical scenario might involve a Cloud Code Event Script communicating with the deltaDNA decision point campaign API to retrieve Ad placement or IAP promo information.
 
-However, we will show a more complex example to demonstrate additional commumication steps. 
+However, we will show a more complex example to demonstrate additional commumication steps.
 * The game client will call a ChilliConnect Cloud Code script.
 * The Cloud Code script will make a request to the deltaDNA Engage Decision Point API.
 * The Cloud Code script will pass the response back to the game client.
@@ -352,7 +352,7 @@ e.g. A **Game Parameter Action** that would show the player Rewarded Ads worth 1
 ![RewardedAd GameParameter Action](Images/RewardedAd.jpg)
 
 And a set of Decision Point Campaigns to promote different placements based on player segment.
-![Decision Point Camapigns](Images/DecisionPointCampaigns.jpg) 
+![Decision Point Camapigns](Images/DecisionPointCampaigns.jpg)
 
 The following code in the game client runs the remote Cloud Code script and deals with the response.
 ```C#
@@ -410,11 +410,11 @@ Like the event recording script it uses a common module to get the deltaDNA **En
 ```Javascript
 try {
     var ddnaEngageUrl =  ddna.getEngageUrl();
-    
+
     if (ChilliConnect.Request.decisionPoint && ChilliConnect.Request.platform && ddnaEngageUrl) {
-        
+
         var parameters = {};
-        
+
         var body = {
             decisionPoint: ChilliConnect.Request.decisionPoint,
             platform : ChilliConnect.Request.platform,
@@ -422,12 +422,12 @@ try {
             version: "4",
             parameters : parameters
         };
-        
+
         ChilliConnect.Logger.info(ddnaEngageUrl);
 
         var request = ChilliConnect.Http.Request.setJson(body);
         var response = request.post(ddnaEngageUrl);    
-                  
+
         if(response) {
             ChilliConnect.Logger.info(response.getBody());
             return(response.getJSON());
@@ -439,11 +439,11 @@ try {
 # Out Of Game CRM
 deltaDNA Out Of Game campaigns are used for sending Push Notifications, Emails and Webhook requests via external API. They are ideal for messaging and remotely gifting currency or inventory items to a player when they are offline.
 
-Out Of Game campaigns support powerful player segmentation, timing and localisation capabilities and can be used to automate CRM campaigns. 
+Out Of Game campaigns support powerful player segmentation, timing and localisation capabilities and can be used to automate CRM campaigns.
 
 In this example we will remotely gift 100 coins to new players at 6:30pm in their local time-zone the day after they start playing. We will also send them a push notification informing them of the gift and encouraging them back to the game.
 
-This is achieved by setting up an Engage Out Of Game Campaign that uses a Webhook action to make a POST to a ChilliConnect External Cloud Script. The Cloud script parses the data it receives, updates the player's currency balance and sends an event back to deltaDNA indicating that the gift was delivered. 
+This is achieved by setting up an Engage Out Of Game Campaign that uses a Webhook action to make a POST to a ChilliConnect External Cloud Script. The Cloud script parses the data it receives, updates the player's currency balance and sends an event back to deltaDNA indicating that the gift was delivered.
 
 The Webhook Action contains 3 parameters to specify the reward name type and amount. It contains the userID and environmentID to ensure the gift is given to the correct player and it contains the URL, encoding and HTTP method to be used to send the data to ChilliConnect Cloud Script.
 
@@ -453,34 +453,34 @@ An External Cloud Code script on ChilliConnect contains the code to deliver the 
 
 ![External Cloud Code Script](Images/ExternalCloudCodeScript.jpg)
 
-The code parses the Webhook request to make sure all the required parameters are present,  then updates the player's currency balance. 
+The code parses the Webhook request to make sure all the required parameters are present,  then updates the player's currency balance.
 ```JavaScript
 ChilliConnect.Logger.info("Starting deltaDNA Out Of Game Campaign request");
 var response = ChilliConnect.External.Response;
-    
+
 try {
-    
+
     var coinsBalance;
     var userLevel ;
-    var player ; 
-    
+    var player ;
+
     // parse external POST for required parameters
     var userID = ChilliConnect.External.Request.getQueryParam("userID");
-    var environmentID = ChilliConnect.External.Request.getQueryParam( "environmentID" ); 
+    var environmentID = ChilliConnect.External.Request.getQueryParam( "environmentID" );
     var rewardType = ChilliConnect.External.Request.getQueryParam("rewardType");
     var rewardAmount = Number(ChilliConnect.External.Request.getQueryParam("rewardAmount"));
     var rewardName = ChilliConnect.External.Request.getQueryParam("rewardName");
-    
+
     // Check the request has a userID and an enviroment key that matches our game and a reward
     if (userID && environmentID && (environmentID == ddna.devEnvironmentKey || environmntID == ddna.liveEnvironmntKey) && rewardType && rewardAmount) {
-        
+
         ChilliConnect.Logger.info("userID :" + userID + " environmentID : " + environmentID);
         ChilliConnect.Logger.info("Reward :" + rewardAmount + " " + rewardType);
-        
+
         // Apply reward
         if (rewardType == "COINS") {
             // Increment Player Coin balance
-            sdk.PlayerAccounts.asPlayer( userID, 
+            sdk.PlayerAccounts.asPlayer( userID,
                  function() {
                     sdk.Economy.addCurrencyBalance("COINS", rewardAmount );
                     player = sdk.PlayerAccounts.getPlayerDetails();
@@ -493,7 +493,7 @@ An event is then sent to deltaDNA to record that the gift was successfully deliv
 ```Javascript
             // Send Feedback event to DDNA to record the fact that the reward was applied
             var ddnaCollectUrl = ddna.getCollectUrl();
-            
+
             if (ddnaCollectUrl !== null) {
                 var parameters = {
                     coinBalance : coinsBalance,
@@ -502,13 +502,13 @@ An event is then sent to deltaDNA to record that the gift was successfully deliv
                     rewardType : rewardType,
                     rewardAmount : rewardAmount
                 };
-                
+
                 var body = {
                     eventName: "outOfGameReward",
                     userID: player.ChilliConnectID,
                     eventParams : parameters
                 };
-                
+
                 var request = ChilliConnect.Http.Request.setJson(body);
                 var collectResponse = request.post(ddnaCollectUrl);  
 ```
@@ -528,6 +528,6 @@ More complex logic could be built into the campaign for example.
 * Different rewards and messages can be A/B Tested
 
 # Conclusion
-This tutorial has shown some common scenarios where deltaDNA and ChilliConnect are used to remotely manage the game ecosystem, player personalization and CRM. 
+This tutorial has shown some common scenarios where deltaDNA and ChilliConnect are used to remotely manage the game ecosystem, player personalization and CRM.
 
-Live-ops and CRM techniques are evolving rapidly, hopefully this tutorial shows you some of the building blocks that you will need to construct your next great idea, but be sure to get in touch with support@deltanda.com if you are unsure how to implement it. 
+Live-ops and CRM techniques are evolving rapidly, hopefully this tutorial shows you some of the building blocks that you will need to construct your next great idea, but be sure to get in touch with support@deltanda.com if you are unsure how to implement it.
