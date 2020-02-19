@@ -539,8 +539,8 @@ public class GameManager : MonoBehaviour {
 
         player.UpdatePlayerStatistics();
 
-        missionSummary.Show(player.state);
-        Pause();
+        //missionSummary.Show(player.state);
+       // Pause();
         
     }
 

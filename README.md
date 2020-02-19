@@ -4,6 +4,9 @@ deltaDNA and ChilliConnect work well together to provide a rich set of Analytics
 
 There are multiple communication paths between deltaDNA, ChilliConnect, the game client and respective cloud services to facilitate a wide range of use cases.
 
+
+![loginEvent](Images/deltaDNA-ChilliConnect.jpg)
+
 This tutorial contains examples of the following common scenarios.
 
 * [Common Player Identity](#common-player-identity)
